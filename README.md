@@ -11,7 +11,7 @@ This repository provides backend code and examples to run Dear ImGui within Blen
 
 ## Installation
 
-Prior to using the code from this repository, we will install [imgui's Python binding](https://pyimgui.readthedocs.io/en/latest/). Beware that it must be installed **in Blender's Python**, not in system's Python so you must call `pip` through Blender's python like so:
+Prior to using the code from this repository, we will install [Dear ImGui's Python binding](https://pyimgui.readthedocs.io/en/latest/). Beware that it must be installed **in Blender's Python**, not in system's Python so you must call `pip` through Blender's python like so:
 
 ```
 REM An example on Windows
