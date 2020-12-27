@@ -1,5 +1,5 @@
-Imgui for Blender
-=================
+Dear Imgui for Blender
+======================
 
 Use the infamous [Dear ImGui](https://github.com/ocornut/imgui) library directly in your Blender scripts! This means custom GUI drawing in your operators:
 
