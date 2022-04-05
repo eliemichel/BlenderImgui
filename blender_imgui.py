@@ -401,8 +401,10 @@ class GlobalImgui:
             | imgui.WINDOW_NO_TITLE_BAR
             | imgui.WINDOW_ALWAYS_AUTO_RESIZE
         )
+        # We create an empty window to avoid an error (and a hard crash) that occurs where imgui.end_frame() is called after imgui.new_frame() without imgui.begin() being called inbetween.
+        # This can happen if a child of BlenderImguiOverlay with a draw method that never calls imgui.begin() is created & enabled.
         imgui.begin("", closable=False, flags=imguiFlags)
-        imgui.set_window_position(-1000000,-100000)
+        imgui.set_window_position(-10000000,-1000000)
         imgui.end()
         imgui.end_frame()
         imgui.render()
