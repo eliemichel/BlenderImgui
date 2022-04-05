@@ -18,7 +18,7 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-blender_imgui_global_framerate_cap = 10
+blender_imgui_global_framerate_cap = 30
 "I use this to limit the amount of frames that blender_imgui can emit, it helps to offload stress of the main thread in some situations, like when running modals."
 import bpy
 from bpy.types import SpaceView3D
