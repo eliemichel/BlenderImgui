@@ -42,7 +42,7 @@ class ImguiExampleOverlay(BlenderImguiOverlay):
             | imgui.WINDOW_NO_TITLE_BAR
             | imgui.WINDOW_ALWAYS_AUTO_RESIZE
         )
-        imgui.begin("", closable=False, flags=flags)
+        imgui.begin("Some Title", closable=False, flags=flags)
         imgui.text("An ImGui Overlay!")
         imgui.text("Overlays cannot be interacted with.")
         imgui.end()
