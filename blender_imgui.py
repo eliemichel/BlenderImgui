@@ -18,6 +18,8 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
+blender_imgui_global_framerate_cap = 30
+"I use this to limit the amount of frames that blender_imgui can emit, it helps to offload stress of the main thread in some situations, like when running modals."
 import bpy
 from bpy.types import SpaceView3D
 import bgl as gl
@@ -65,7 +67,6 @@ class BlenderImguiRenderer(BaseOpenGLRenderer):
             step(linear, vec4(0.00031308))
         );
     }
-
     vec4 srgb_to_linear(vec4 srgb) {
         return mix(
             pow((srgb + 0.055) / 1.055, vec4(2.4)),
@@ -305,7 +306,12 @@ class GlobalImgui:
         
     def shutdown_imgui(self):
         for SpaceType, draw_handler in self.draw_handlers.items():
-            SpaceType.draw_handler_remove(self.draw_handler, 'WINDOW')
+            try:
+                SpaceType.draw_handler_remove(draw_handler, 'WINDOW')
+            except Exception as error:
+                import inspect
+                relevantFrameInfo = inspect.getframeinfo(inspect.currentframe())
+                print(f"Pyimgui Failed to remove drawhandler at blender_imgui.py line {relevantFrameInfo.lineno} in shutdown_imgui(). See error:\n-> {error} \n<-")
         imgui.destroy_context(self.imgui_ctx)
         self.imgui_ctx = None
 
@@ -338,18 +344,68 @@ class GlobalImgui:
         if not self.callbacks:
             self.shutdown_imgui()
 
+    lastLetThroughTime = 0
+    def returnTrueXAmountOfTimesPerSecondToCreateSolidFramerate(self, framerate: int, frameNumber: list[int] = [0]):
+        """frame number should be something like: frameNumber = [0]. 
+        It will set index 0 of the list to a number that will always be incremented by 1 + any number of missed frames since last the function was called.
+
+        Example usecase of this function would be:
+
+        while(True):
+        frameNumber = [0]
+        if returnTrueXAmountOfTimesPerSecondToCreateSolidFramerate(4, frameNumber):
+            print(frameNumber)
+
+        which would print the current frame number 4 times every second. Each frame number would always be 1 greater than the previous."""
+        import time
+        import math
+        # framerate = 4
+        def formula():
+            return math.floor(time.time()*framerate)
+
+        currentTime = formula()
+        # try:
+        self.lastLetThroughTime
+        # except:
+        #     lastLetThroughTime = 0
+        # print(lastLetThroughTime)
+        if self.lastLetThroughTime != currentTime:
+            self.lastLetThroughTime = currentTime
+            frameNumber[0] = currentTime
+            return True
+        frameNumber[0] = currentTime
+        return False
+
     def draw(self, CurrentSpaceType):
+        if self.callbacks.values().__len__() == 0:
+            return
+        if not self.returnTrueXAmountOfTimesPerSecondToCreateSolidFramerate(blender_imgui_global_framerate_cap):
+            self.imgui_backend.render(imgui.get_draw_data())
+            return
         context = bpy.context
         region = context.region
         io = imgui.get_io()
         io.display_size = region.width, region.height
         io.font_global_scale = context.preferences.view.ui_scale
+        # imgui.render()
+        # imgui.end_frame()
         imgui.new_frame()
-
         for cb, SpaceType in self.callbacks.values():
             if SpaceType == CurrentSpaceType:
                 cb(context)
-
+    
+        imguiFlags = (
+            imgui.WINDOW_NO_RESIZE
+            | imgui.WINDOW_NO_MOVE
+            | imgui.WINDOW_NO_COLLAPSE
+            | imgui.WINDOW_NO_TITLE_BAR
+            | imgui.WINDOW_ALWAYS_AUTO_RESIZE
+        )
+        # We create an empty window to avoid an error (and a hard crash) that occurs where imgui.end_frame() is called after imgui.new_frame() without imgui.begin() being called inbetween.
+        # This can happen if a child of BlenderImguiOverlay with a draw method that never calls imgui.begin() is created & enabled.
+        imgui.begin("", closable=False, flags=imguiFlags)
+        imgui.set_window_position(-10000000,-1000000)
+        imgui.end()
         imgui.end_frame()
         imgui.render()
         self.imgui_backend.render(imgui.get_draw_data())
@@ -424,7 +480,6 @@ class ImguiBasedOperator:
         'RIGHT_SHIFT': 128 + 6,
         'OSKEY': 128 + 7,
     }
-
     def init_imgui(self, context):
         self.imgui_handle = imgui_handler_add(self.draw, SpaceView3D)
         
